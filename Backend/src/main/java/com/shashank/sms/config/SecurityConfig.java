@@ -43,9 +43,12 @@ public class SecurityConfig {
             .cors(cors -> {})
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/auth/**").permitAll()
-                    .anyRequest().authenticated()
-            )
+            	    .requestMatchers("/auth/**").permitAll()
+            	    .requestMatchers("/attendance/**").hasRole("ADMIN")
+            	    .requestMatchers("/students/**").hasRole("ADMIN")
+            	    .requestMatchers("/subjects/**").hasAnyRole("ADMIN","STUDENT")
+            	    .anyRequest().authenticated()
+            	)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

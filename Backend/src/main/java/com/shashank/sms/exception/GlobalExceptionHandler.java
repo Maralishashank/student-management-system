@@ -22,14 +22,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
     
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex){
-
-        Map<String, Object> error = new HashMap<>();
-        error.put("timestamp", LocalDateTime.now());
-        error.put("status", 400);
-        error.put("error", ex.getMessage());
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleAll(Exception ex){
+        return new ResponseEntity<>("Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

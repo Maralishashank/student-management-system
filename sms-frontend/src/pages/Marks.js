@@ -79,13 +79,7 @@ function Marks(){
     }
 
   }
-  const departmentSubjects = {
 
-  CSE: ["Java","Data Structures","DBMS"],
-  IT: ["Python","Networking","Cloud"],
-  ECE: ["Signals","Embedded Systems","VLSI"]
-
-};
 
   return(
 
@@ -112,16 +106,22 @@ function Marks(){
   className="form-control"
   value={studentId}
  
- onChange={(e)=>{
+onChange={async (e) => {
 
   const id = e.target.value;
-
   setStudentId(id);
+  setSubject("");
+  setSubjects([]);
 
-  const student = students.find(s => s.id === id);
+  const student = students.find(s => s.id === id); // ✅ FIX (==)
 
   if(student){
-    setSubjects(departmentSubjects[student.department] || []);
+    try{
+      const res = await API.get(`/subjects/department/${student.department}`);
+      setSubjects(res.data);
+    }catch(err){
+      console.log(err);
+    }
   }
 
 }}

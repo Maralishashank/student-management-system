@@ -1,6 +1,8 @@
 package com.shashank.sms.Entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 public class Student {
@@ -9,9 +11,11 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
     private String name;
-    
-    @Column(nullable = false, unique = true)
+
+    @Email
+    @NotBlank
     private String email;
     private String department;
 

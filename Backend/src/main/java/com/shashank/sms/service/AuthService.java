@@ -16,7 +16,6 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AttendanceService attendanceService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
@@ -28,7 +27,6 @@ public class AuthService {
 
         this.userRepository = userRepository;
         this.passwordEncoder = (BCryptPasswordEncoder) passwordEncoder;
-        this.attendanceService = attendanceService;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
     }
@@ -59,11 +57,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Check if first login
-        if(user.isFirstLogin()){
+        if(user.isFirstLogin() && user.getRole().equals("STUDENT")){
             throw new RuntimeException("FIRST_LOGIN_CHANGE_PASSWORD");
         }
-
-        attendanceService.markAttendance(user.getUsername());
 
         return jwtUtil.generateToken(user.getUsername(), user.getRole());
     }

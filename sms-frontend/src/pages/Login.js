@@ -22,20 +22,27 @@ function Login(){
     try{
 
       const res = await API.post("/auth/login",{
-        username,
-        password
-      });
+  username,
+  password
+});
 
-      console.log("login response:", res.data);
+console.log("login response:", res.data);
 
-      const token =
-        typeof res.data === "string"
-          ? res.data
-          : res.data.token || res.data.jwt || res.data.accessToken;
+// 🔥 HANDLE FIRST LOGIN
+if(res.data === "FIRST_LOGIN"){
+  navigate("/change-password");
+  setLoading(false);
+  return;
+}
 
-      if(!token){
-        throw new Error("Token not found in login response");
-      }
+const token =
+  typeof res.data === "string"
+    ? res.data
+    : res.data.token || res.data.jwt || res.data.accessToken;
+
+if(!token){
+  throw new Error("Token not found in login response");
+}
 
       localStorage.setItem("token", token);
 
