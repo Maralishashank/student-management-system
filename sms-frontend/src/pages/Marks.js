@@ -3,165 +3,145 @@ import API from "../services/api";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
-function Marks(){
+function Marks() {
 
-  const [marks,setMarks] = useState([]);
-
-  const [studentId,setStudentId] = useState("");
-  const [subject,setSubject] = useState("");
-  const [score,setScore] = useState("");
-  const [maxScore,setMaxScore] = useState("");
-  const [students,setStudents] = useState([]);
-  const [subjects,setSubjects] = useState([]);
+  const [marks, setMarks] = useState([]);
+  const [studentId, setStudentId] = useState("");
+  const [subject, setSubject] = useState("");
+  const [score, setScore] = useState("");
+  const [maxScore, setMaxScore] = useState("");
+  const [students, setStudents] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
   const loadMarks = async () => {
-
-    try{
-
-      const res = await API.get("/marks")
-
+    try {
+      const res = await API.get("/marks");
       setMarks(res.data);
-
-    }catch(error){
-
+    } catch (error) {
       console.log(error);
-
     }
-    
+  };
 
-  }
   const loadStudents = async () => {
+    try {
+      const res = await API.get("/students");
+      // FIX: Added ?? [] null guard — same crash risk as in Students.js
+      setStudents(res.data.content ?? []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-  try{
+  useEffect(() => {
+    loadMarks();
+    loadStudents();
+  }, []);
 
-    const res = await API.get("/students");
+  const handleStudentChange = async (e) => {
+    const id = e.target.value;
+    setStudentId(id);
+    setSubject("");
+    setSubjects([]);
 
-    setStudents(res.data.content);
+    // FIX: The original code used strict equality (s.id === id).
+    //      e.target.value is always a string, but s.id from the API is a number.
+    //      Strict equality between "5" and 5 is false, so student was always
+    //      undefined and subjects never loaded.
+    //      Fixed by converting id to a Number before comparing.
+    const student = students.find(s => s.id === Number(id));
 
-  }catch(error){
-
-    console.log(error);
-
-  }
-
-}
-
-  useEffect(()=>{
-
-  loadMarks();
-  loadStudents();
-
-},[])
+    if (student) {
+      try {
+        const res = await API.get(`/subjects/department/${student.department}`);
+        setSubjects(res.data);
+      } catch (err) {
+        console.log("Failed to load subjects:", err);
+      }
+    }
+  };
 
   const addMarks = async () => {
 
-    try{
-
-      await API.post("/marks",{
-        studentId,
-        subject,
-        score,
-        maxScore
-      })
-      loadMarks();
-
-      alert("Marks added");
-
-      setStudentId("")
-      setSubject("")
-      setScore("")
-      setMaxScore("")
-
-    }catch(error){
-
-      alert("Error adding marks")
-
+    if (!studentId || !subject || !score || !maxScore) {
+      alert("Please fill in all fields.");
+      return;
     }
 
-  }
+    try {
+      await API.post("/marks", {
+        // FIX: Send as numbers not strings — the backend entity expects Long/int
+        studentId: Number(studentId),
+        subject,
+        score: Number(score),
+        maxScore: Number(maxScore)
+      });
+      loadMarks();
+      alert("Marks added");
+      setStudentId("");
+      setSubject("");
+      setScore("");
+      setMaxScore("");
+      setSubjects([]);
+    } catch (error) {
+      const msg = error.response?.data?.error || "Error adding marks";
+      alert(msg);
+    }
+  };
 
-
-  return(
-
+  return (
     <div>
-
-      <Navbar/>
-
+      <Navbar />
       <div className="d-flex">
-
-        <Sidebar/>
-
+        <Sidebar />
         <div className="container mt-4">
 
           <h2>Marks</h2>
 
           <div className="card p-3 mb-4">
-
             <h5>Add Marks</h5>
-
-            <div className="row">
+            <div className="row g-2">
 
               <div className="col">
                 <select
-  className="form-control"
-  value={studentId}
- 
-onChange={async (e) => {
-
-  const id = e.target.value;
-  setStudentId(id);
-  setSubject("");
-  setSubjects([]);
-
-  const student = students.find(s => s.id === id); // ✅ FIX (==)
-
-  if(student){
-    try{
-      const res = await API.get(`/subjects/department/${student.department}`);
-      setSubjects(res.data);
-    }catch(err){
-      console.log(err);
-    }
-  }
-
-}}
->
-
-<option value="">Select Student</option>
-
-{students.map((s)=>(
-  <option key={s.id} value={s.id}>
-    {s.name} ({s.department})
-  </option>
-))}
-
-</select>
+                  className="form-control"
+                  value={studentId}
+                  onChange={handleStudentChange}
+                >
+                  <option value="">Select Student</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.department})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="col">
-               <select
-  className="form-control"
-  value={subject}
-  onChange={(e)=>setSubject(e.target.value)}
->
-
-<option value="">Select Subject</option>
-
-{subjects.map((sub,i)=>(
-  <option key={i} value={sub}>
-    {sub}
-  </option>
-))}
-
-</select>
+                <select
+                  className="form-control"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  disabled={subjects.length === 0}
+                >
+                  <option value="">
+                    {studentId ? "Select Subject" : "Select student first"}
+                  </option>
+                  {subjects.map((sub, i) => (
+                    <option key={i} value={sub.name}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="col">
                 <input
                   className="form-control"
                   placeholder="Score"
+                  type="number"
+                  min="0"
                   value={score}
-                  onChange={(e)=>setScore(e.target.value)}
+                  onChange={(e) => setScore(e.target.value)}
                 />
               </div>
 
@@ -169,66 +149,45 @@ onChange={async (e) => {
                 <input
                   className="form-control"
                   placeholder="Max Score"
+                  type="number"
+                  min="1"
                   value={maxScore}
-                  onChange={(e)=>setMaxScore(e.target.value)}
+                  onChange={(e) => setMaxScore(e.target.value)}
                 />
               </div>
 
-              <div className="col">
-                <button
-                  className="btn btn-primary"
-                  onClick={addMarks}
-                >
-                  Add
-                </button>
+              <div className="col-auto">
+                <button className="btn btn-primary" onClick={addMarks}>Add</button>
               </div>
 
             </div>
-
           </div>
 
           <table className="table table-bordered">
-
             <thead className="table-dark">
-
               <tr>
-
                 <th>Student ID</th>
-<th>Subject</th>
-<th>Score</th>
-<th>Max Score</th>
-
+                <th>Subject</th>
+                <th>Score</th>
+                <th>Max Score</th>
               </tr>
-
             </thead>
-
             <tbody>
-
-              {marks.map((m,i)=>(
-
+              {marks.map((m, i) => (
                 <tr key={i}>
-
                   <td>{m.studentId}</td>
-<td>{m.subject}</td>
-<td>{m.score}</td>
-<td>{m.maxScore}</td>
-
+                  <td>{m.subject}</td>
+                  <td>{m.score}</td>
+                  <td>{m.maxScore}</td>
                 </tr>
-
               ))}
-
             </tbody>
-
           </table>
 
         </div>
-
       </div>
-
     </div>
-
-  )
-
+  );
 }
 
 export default Marks;

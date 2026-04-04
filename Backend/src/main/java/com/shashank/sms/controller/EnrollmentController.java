@@ -19,40 +19,37 @@ public class EnrollmentController {
     private final StudentService studentService;
 
     public EnrollmentController(EnrollmentRepository enrollmentRepository,
-                                StudentService studentService){
-
+                                StudentService studentService) {
         this.enrollmentRepository = enrollmentRepository;
         this.studentService = studentService;
     }
 
     @PostMapping("/{courseId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public void enroll(@PathVariable Long courseId, Authentication auth){
+    public void enroll(@PathVariable Long courseId, Authentication auth) {
 
         String email = auth.getName();
+        Long studentId = studentService.getStudentByEmail(email).getId();
 
-        Long studentId = studentService
-                .getStudentByEmail(email)
-                .getId();
+        // FIX: Added duplicate enrollment check. Previously a student could enroll
+        //      in the same course multiple times, creating duplicate records in the
+        //      enrollments table. Now throws a clear error if already enrolled.
+        if (enrollmentRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
+            throw new RuntimeException("Already enrolled in this course");
+        }
 
         Enrollment e = new Enrollment();
-
         e.setStudentId(studentId);
         e.setCourseId(courseId);
-
         enrollmentRepository.save(e);
     }
-    
+
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")
-    public List<Enrollment> getMyEnrollments(Authentication auth){
+    public List<Enrollment> getMyEnrollments(Authentication auth) {
 
         String email = auth.getName();
-
-        Long studentId = studentService
-                .getStudentByEmail(email)
-                .getId();
-
+        Long studentId = studentService.getStudentByEmail(email).getId();
         return enrollmentRepository.findByStudentId(studentId);
     }
 }

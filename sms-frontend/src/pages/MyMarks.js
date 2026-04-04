@@ -3,82 +3,74 @@ import API from "../services/api";
 import Navbar from "../components/Navbar";
 import StudentSidebar from "../components/StudentSidebar";
 
-function MyMarks(){
+function MyMarks() {
 
-  const [marks,setMarks] = useState([]);
+  const [marks, setMarks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const loadMarks = async () => {
-
-    try{
-
+    try {
       const res = await API.get("/marks/my");
-
       setMarks(res.data);
-
-    }catch(error){
-
+    } catch (error) {
       console.log(error);
-
+    } finally {
+      setLoading(false);
     }
+  };
 
-  }
-
-  useEffect(()=>{
+  useEffect(() => {
     loadMarks();
-  },[])
+  }, []);
 
-  return(
+  // FIX: Compute percentage for each subject to display alongside raw score
+  const withPercentage = marks.map(m => ({
+    ...m,
+    percentage: m.maxScore > 0 ? ((m.score / m.maxScore) * 100).toFixed(1) : "—"
+  }));
 
+  return (
     <div>
-
-      <Navbar/>
-
+      <Navbar />
       <div className="d-flex">
-
-        <StudentSidebar/>
-
+        <StudentSidebar />
         <div className="container mt-4">
 
           <h2>My Marks</h2>
 
-          <table className="table table-bordered">
+          {loading && <p className="text-muted">Loading...</p>}
 
-            <thead className="table-dark">
+          {!loading && marks.length === 0 && (
+            <p className="text-muted">No marks recorded yet.</p>
+          )}
 
-              <tr>
-                <th>Subject</th>
-                <th>Score</th>
-                <th>Max Score</th>
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {marks.map((m,i)=>(
-
-                <tr key={i}>
-
-                  <td>{m.subject}</td>
-                  <td>{m.score}</td>
-                  <td>{m.maxScore}</td>
-
+          {!loading && marks.length > 0 && (
+            <table className="table table-bordered">
+              <thead className="table-dark">
+                <tr>
+                  <th>Subject</th>
+                  <th>Score</th>
+                  <th>Max Score</th>
+                  <th>Percentage</th>
                 </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
+              </thead>
+              <tbody>
+                {withPercentage.map((m, i) => (
+                  <tr key={i}>
+                    <td>{m.subject}</td>
+                    <td>{m.score}</td>
+                    <td>{m.maxScore}</td>
+                    <td>{m.percentage}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
         </div>
-
       </div>
-
     </div>
-
-  )
-
+  );
 }
 
 export default MyMarks;

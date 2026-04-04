@@ -1,6 +1,5 @@
 package com.shashank.sms.service;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,30 +20,28 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       AttendanceService attendanceService,
                        AuthenticationManager authenticationManager,
                        JwtUtil jwtUtil) {
-
         this.userRepository = userRepository;
-        this.passwordEncoder = (BCryptPasswordEncoder) passwordEncoder;
+        this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
     }
 
-    public User register(User user){
+    public User register(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
-    public User findByUsername(String username){
+    public User findByUsername(String username) {
         return userRepository.findByUsername(username).orElse(null);
     }
 
-    public boolean checkPassword(String rawPassword, String encodedPassword){
+    public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 
-    public String login(LoginRequest request){
+    public String login(LoginRequest request) {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -56,19 +53,23 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Check if first login
-        if(user.isFirstLogin() && user.getRole().equals("STUDENT")){
-            throw new RuntimeException("FIRST_LOGIN_CHANGE_PASSWORD");
+        // FIX: On first login, return a real JWT that also carries a "firstLogin=true"
+        // claim. The frontend detects this claim and redirects to the change-password page.
+        // Because the token is a valid JWT, the student can immediately use it to call
+        // POST /auth/change-password (which requires authentication).
+        // This removes the deadlock where the student had no token to make that call.
+        if (user.isFirstLogin() && user.getRole().equals("STUDENT")) {
+            return jwtUtil.generateFirstLoginToken(user.getUsername(), user.getRole());
         }
 
         return jwtUtil.generateToken(user.getUsername(), user.getRole());
     }
-    
-    public String encodePassword(String password){
+
+    public String encodePassword(String password) {
         return passwordEncoder.encode(password);
     }
 
-    public User save(User user){
+    public User save(User user) {
         return userRepository.save(user);
     }
 }
