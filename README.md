@@ -6,25 +6,54 @@ A full-stack web application for managing students, courses, marks, and attendan
 
 ## 📸 Screenshots
 
+### 👨‍💼 Admin
+
 <p align="center">
-  <b>Admin Dashboard</b><br>
-  <img src="screenshots/admin-dashboard.png.png" width="70%" />
+  <b>Admin Dashboard</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <b>Students Page</b>
 </p>
 
 <p align="center">
-  <b>Students Page</b><br>
-  <img src="screenshots/students.png.png" width="70%" />
+  <img src="screenshots/admin-dashboard.png.png" width="45%" />
+  <img src="screenshots/students.png.png" width="45%" />
 </p>
 
 <p align="center">
-  <b>Attendance</b><br>
-  <img src="screenshots/attendance.png.png" width="70%" />
+  <b>Attendance</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <b>Marks</b>
+</p>
+
+
+<p align="center">
+  <img src="screenshots/attendance.png.png" width="45%" />
+  <img src="screenshots/marks.png.png" width="45%" />
+</p>
+
+---
+
+### 🎓 Student
+
+<p align="center">
+  <b>Student Dashboard</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <b>My Courses</b>
 </p>
 
 <p align="center">
-  <b>Student Dashboard</b><br>
-  <img src="screenshots/student-dashboard.png.png" width="70%" />
+  <img src="screenshots/student-dashboard.png.png" width="45%" />
+  <img src="screenshots/my-courses.png.png" width="45%" />
 </p>
+
+
+<p align="center">
+  <b>My Attendance</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <b>My Marks</b>
+</p>
+
+<p align="center">
+  <img src="screenshots/my-attendance.png.png" width="45%" />
+  <img src="screenshots/my-marks.png.png" width="45%" />
+</p>
+
 
 ---
 
