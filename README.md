@@ -7,16 +7,24 @@ A full-stack web application for managing students, courses, marks, and attendan
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenshots/admin-dashboard.png.png" width="45%" />
-  <img src="screenshots/students.png.png" width="45%" />
+  <b>Admin Dashboard</b><br>
+  <img src="screenshots/admin-dashboard.png.png" width="70%" />
 </p>
 
 <p align="center">
-  <img src="screenshots/attendance.png.png" width="45%" />
-  <img src="screenshots/student-dashboard.png.png" width="45%" />
+  <b>Students Page</b><br>
+  <img src="screenshots/students.png.png" width="70%" />
 </p>
 
----
+<p align="center">
+  <b>Attendance</b><br>
+  <img src="screenshots/attendance.png.png" width="70%" />
+</p>
+
+<p align="center">
+  <b>Student Dashboard</b><br>
+  <img src="screenshots/student-dashboard.png.png" width="70%" />
+</p>
 
 ---
 
