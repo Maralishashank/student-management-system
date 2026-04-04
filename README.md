@@ -1,6 +1,6 @@
 # Student Management System
 
-A full-stack web application for managing students, courses, marks, and attendance — built with **Spring Boot** (backend) and **React** (frontend).
+A full-stack web application for managing students, courses, marks, and attendance — built with **Spring Boot** on the backend and **React** on the frontend.
 
 ---
 
@@ -15,18 +15,19 @@ A full-stack web application for managing students, courses, marks, and attendan
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
 - [Environment Variables](#environment-variables)
+- [Authentication Flow](#authentication-flow)
 - [API Reference](#api-reference)
-- [Authentication](#authentication)
-- [Screenshots](#screenshots)
-- [Known Issues & Roadmap](#known-issues--roadmap)
+- [Suggested Improvements](#suggested-improvements)
 
 ---
 
 ## Overview
 
-The Student Management System (SMS) provides two user roles — **Admin** and **Student** — each with their own dashboard and set of capabilities. Admins manage the full institution data, while students get a personalised view of their academic profile.
+The Student Management System (SMS) provides two user roles — **Admin** and **Student** — each with their own dashboard and set of capabilities.
 
-Authentication is handled via JWT tokens. All protected routes are secured on both the Spring Security layer and via `@PreAuthorize` annotations on individual endpoints.
+Admins manage the full institution: students, courses, subjects, marks, attendance, and announcements. Students get a personalised view of their academic profile — marks, attendance percentage, enrolled courses, and announcements.
+
+Authentication is stateless JWT-based. All protected routes are secured at both the Spring Security layer and via `@PreAuthorize` on individual endpoints. First-time student logins are forced through a password change before accessing the system.
 
 ---
 
@@ -34,9 +35,9 @@ Authentication is handled via JWT tokens. All protected routes are secured on bo
 
 **Backend**
 - Java 17 + Spring Boot 3
-- Spring Security + JWT (jjwt)
+- Spring Security 6 + JWT (jjwt)
 - Spring Data JPA + Hibernate
-- MySQL (or any JPA-compatible RDBMS)
+- MySQL
 - Maven
 
 **Frontend**
@@ -52,21 +53,23 @@ Authentication is handled via JWT tokens. All protected routes are secured on bo
 ## Features
 
 ### Admin
-- Add, update, delete, and search students
+- Add, update, delete, and search students with live name filtering
 - Create and delete courses with department assignment
-- Assign marks per student per subject
-- Mark daily attendance by department (present / absent)
-- View attendance reports — daily summary and department-wise breakdown
+- Assign marks per student per subject (subjects loaded dynamically by department)
+- Mark daily attendance by department with present/absent radio buttons and duplicate protection
+- View attendance reports — daily summary, department breakdown, and full record list
 - Post announcements
-- Dashboard with live stats and a students-per-department bar chart
+- Dashboard with live student/course/marks stats and a students-per-department bar chart
 
 ### Student
+- Forced password change on first login
+- Dashboard showing average marks, attendance percentage, and recent announcements
+- View full marks breakdown with per-subject percentage
+- View attendance summary (present days, absent days, percentage)
+- Browse and enroll in available courses (duplicate enrollment prevented)
+- View enrolled courses with full course details
+- View all announcements
 - View personal profile
-- Browse available courses and enroll
-- View enrolled courses
-- Check own marks per subject
-- Check own attendance percentage
-- View announcements
 
 ---
 
@@ -74,23 +77,62 @@ Authentication is handled via JWT tokens. All protected routes are secured on bo
 
 ```
 sms/
-├── backend/                        # Spring Boot application
+├── backend/
 │   └── src/main/java/com/shashank/sms/
-│       ├── config/                 # SecurityConfig, CorsConfig
-│       ├── controller/             # REST controllers
-│       ├── dto/                    # Request/response DTOs
-│       ├── entity/                 # JPA entities
-│       ├── exception/              # GlobalExceptionHandler
-│       ├── repository/             # Spring Data JPA repositories
-│       ├── security/               # JwtFilter, JwtUtil
-│       └── service/                # Business logic
+│       ├── config/
+│       │   ├── CorsConfig.java
+│       │   └── SecurityConfig.java
+│       ├── controller/
+│       │   ├── AuthController.java
+│       │   ├── AttendanceController.java
+│       │   ├── AnnouncementController.java
+│       │   ├── CourseController.java
+│       │   ├── DashboardController.java
+│       │   ├── EnrollmentController.java
+│       │   ├── MarksController.java
+│       │   ├── StudentController.java
+│       │   └── SubjectController.java
+│       ├── dto/
+│       ├── entity/
+│       ├── exception/
+│       │   ├── GlobalExceptionHandler.java
+│       │   └── ResourceNotFoundException.java
+│       ├── repository/
+│       ├── security/
+│       │   ├── JwtFilter.java
+│       │   └── JwtUtil.java
+│       └── service/
+│           ├── AttendanceService.java
+│           ├── AuthService.java
+│           ├── CustomUserDetailsService.java
+│           ├── MarksService.java
+│           └── StudentService.java
 │
-└── frontend/                       # React application
+└── frontend/
     └── src/
-        ├── components/             # Navbar, Sidebar, StudentSidebar, DashboardCharts
-        ├── pages/                  # One file per route/view
+        ├── components/
+        │   ├── DashboardCharts.js
+        │   ├── Navbar.js
+        │   ├── PrivateRoute.js
+        │   ├── Sidebar.js
+        │   └── StudentSidebar.js
+        ├── pages/
+        │   ├── AdminDashboard.js
+        │   ├── Announcements.js
+        │   ├── Attendance.js
+        │   ├── ChangePassword.js
+        │   ├── Courses.js
+        │   ├── Login.js
+        │   ├── MarkAttendance.js
+        │   ├── Marks.js
+        │   ├── MyAttendance.js
+        │   ├── MyCourses.js
+        │   ├── MyMarks.js
+        │   ├── Profile.js
+        │   ├── StudentDashboard.js
+        │   └── Students.js
         └── services/
-            └── api.js              # Axios instance with JWT interceptor
+            └── api.js
 ```
 
 ---
@@ -101,12 +143,12 @@ sms/
 
 - Java 17+
 - Node.js 18+ and npm
-- MySQL 8+ (or update `application.properties` for another DB)
+- MySQL 8+
 - Maven 3.8+
 
 ### Backend Setup
 
-1. Clone the repository and navigate to the backend directory:
+1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/student-management-system.git
    cd sms/backend
@@ -117,26 +159,26 @@ sms/
    CREATE DATABASE sms_db;
    ```
 
-3. Update `src/main/resources/application.properties`:
+3. Configure `src/main/resources/application.properties`:
    ```properties
    spring.datasource.url=jdbc:mysql://localhost:3306/sms_db
    spring.datasource.username=your_db_user
    spring.datasource.password=your_db_password
    spring.jpa.hibernate.ddl-auto=update
+   spring.jpa.show-sql=false
    ```
 
 4. Run the application:
    ```bash
    mvn spring-boot:run
    ```
-
    The API will be available at `http://localhost:8080`.
 
-5. Register an admin user via the API (or seed directly in the DB):
+5. Create an admin account (run once after first start):
    ```bash
    curl -X POST http://localhost:8080/auth/register \
      -H "Content-Type: application/json" \
-     -d '{"username":"admin","password":"admin123","role":"ADMIN"}'
+     -d '{"username":"admin","password":"admin123","role":"ADMIN","firstLogin":false}'
    ```
 
 ### Frontend Setup
@@ -155,63 +197,79 @@ sms/
    ```bash
    npm start
    ```
-
    The app will be available at `http://localhost:3000`.
 
 ---
 
 ## Environment Variables
 
-The frontend API base URL is configured in `src/services/api.js`. To point to a different backend host, update:
-
-```js
-const API = axios.create({
-  baseURL: "http://localhost:8080",  // ← change this
-});
-```
-
-For production, use an environment variable:
+The API base URL is set in `src/services/api.js`. For production use an environment variable:
 
 ```js
 baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080"
 ```
 
-And create a `.env` file in the frontend root:
+Create a `.env` file in the frontend root:
 ```
-REACT_APP_API_URL=https://your-production-api.com
+REACT_APP_API_URL=https://your-api-domain.com
 ```
+
+The JWT secret is currently in `JwtUtil.java`. Before deploying, move it to `application.properties`:
+```properties
+jwt.secret=your-strong-secret-key-minimum-32-characters
+```
+Then inject it with `@Value("${jwt.secret}")`.
+
+---
+
+## Authentication Flow
+
+**Normal login:**
+1. User submits credentials to `POST /auth/login`
+2. Server authenticates and returns a signed JWT containing `username`, `role`, and `firstLogin` claims
+3. Frontend stores the token in `localStorage` and attaches it to every request via an Axios interceptor
+4. `JwtFilter` validates the token and populates the Spring Security context on each request
+5. Role-based access is enforced via `SecurityConfig` (path-level) and `@PreAuthorize` (method-level)
+6. A 401 response interceptor in `api.js` automatically clears the token and redirects to login when it expires
+
+**First-login flow:**
+1. When a student is added by an admin, their account is created with the default password `student123` and `firstLogin = true`
+2. On first login the server returns a short-lived JWT (15 minutes) with `firstLogin: true` in the claims
+3. The frontend detects this claim and redirects to `/change-password`
+4. The student sets a new password — the first-login token authenticates this call to `POST /auth/change-password`
+5. The server clears `firstLogin = false` and the student logs in fresh with their new password
 
 ---
 
 ## API Reference
 
-All protected endpoints require the header:
+All protected endpoints require:
 ```
 Authorization: Bearer <jwt_token>
 ```
 
-### Auth — `/auth`
+### Auth
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | POST | `/auth/register` | Public | Register a new user |
-| POST | `/auth/login` | Public | Login and receive a JWT token |
-| POST | `/auth/change-password` | Authenticated | Change own password |
+| POST | `/auth/login` | Public | Login — returns JWT |
+| POST | `/auth/change-password` | Authenticated | Change password (works with first-login token) |
 
-### Students — `/students`
+### Students
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | GET | `/students` | Admin | All students (paginated) |
-| POST | `/students` | Admin | Add a student (auto-creates login) |
+| POST | `/students` | Admin | Add student — auto-creates login account |
 | GET | `/students/{id}` | Admin | Get student by ID |
 | PUT | `/students/{id}` | Admin | Update student |
 | DELETE | `/students/{id}` | Admin | Delete student |
 | GET | `/students/department/{dept}` | Admin | Filter by department |
-| GET | `/students/department-count` | Admin | Count per department |
+| GET | `/students/department-count` | Admin | Count per department (CSE / IT / ECE) |
 | GET | `/students/me` | Student | Own profile |
 
-### Courses — `/courses`
+### Courses
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
@@ -219,14 +277,14 @@ Authorization: Bearer <jwt_token>
 | POST | `/courses` | Admin | Create course |
 | DELETE | `/courses/{id}` | Admin | Delete course |
 
-### Enrollment — `/enroll`
+### Enrollment
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/enroll/{courseId}` | Student | Enroll in a course |
+| POST | `/enroll/{courseId}` | Student | Enroll in a course (duplicate-safe) |
 | GET | `/enroll/my` | Student | My enrollments |
 
-### Marks — `/marks`
+### Marks
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
@@ -234,17 +292,17 @@ Authorization: Bearer <jwt_token>
 | POST | `/marks` | Admin | Add marks for a student |
 | GET | `/marks/my` | Student | Own marks |
 
-### Attendance — `/attendance`
+### Attendance
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/attendance/mark` | Admin | Mark attendance |
+| POST | `/attendance/mark` | Admin | Mark attendance (duplicate-safe) |
 | GET | `/attendance/all` | Admin | All attendance records |
-| GET | `/attendance/report` | Admin | Daily report (optional `?date=YYYY-MM-DD`) |
+| GET | `/attendance/report?date=YYYY-MM-DD` | Admin | Daily report |
 | GET | `/attendance/department-report` | Admin | Present count by department |
 | GET | `/attendance/my` | Student | Own attendance summary |
 
-### Subjects — `/subjects`
+### Subjects
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
@@ -252,14 +310,14 @@ Authorization: Bearer <jwt_token>
 | POST | `/subjects` | Admin | Add subject |
 | GET | `/subjects/department/{dept}` | Admin, Student | Subjects by department |
 
-### Announcements — `/announcements`
+### Announcements
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | GET | `/announcements` | Authenticated | All announcements |
 | POST | `/announcements` | Admin | Create announcement |
 
-### Dashboard — `/dashboard`
+### Dashboard
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
@@ -267,38 +325,29 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-## Authentication
+## Suggested Improvements
 
-The application uses **stateless JWT authentication**.
+**Security**
+- Move the JWT secret from source code into `application.properties` or an environment variable before any deployment
+- Add a token refresh endpoint so long sessions don't force re-login
+- Add rate limiting on `POST /auth/login` to prevent brute-force attacks
 
-1. On login, the server returns a signed JWT containing the `username` and `role` claims.
-2. The frontend stores the token in `localStorage` and attaches it to every request via an Axios interceptor.
-3. The `JwtFilter` validates the token on each request and populates the Spring Security context.
-4. Role-based access is enforced via `SecurityConfig` (path-level) and `@PreAuthorize` (method-level).
+**Backend**
+- Add pagination to marks and attendance endpoints — they currently return full lists which won't scale
+- Add an edit endpoint for marks so admins can correct mistakes without deleting and re-adding
+- Add a delete endpoint for announcements
+- Replace the hardcoded department list (CSE / IT / ECE) with a `Department` entity so new departments can be added without code changes
+- Add a unique constraint on `Enrollment(studentId, courseId)` at the database level — the app checks it but the DB doesn't enforce it
+- Add database indexes on `Attendance.studentId`, `Attendance.date`, and `Marks.studentId` for query performance
+- Write unit tests for services (JUnit 5 + Mockito) and integration tests for controllers (Spring Boot Test + Testcontainers)
 
-**First-login flow:** Student accounts are created with `firstLogin = true` and a default password (`student123`). On first login, the backend returns a signal to prompt the student to change their password before proceeding.
-
----
-
-## Known Issues & Roadmap
-
-**Current known issues**
-- `GET /attendance/my` is inaccessible to students due to a `SecurityConfig` ordering issue — the broad `/attendance/**` ADMIN rule takes precedence over the student-specific route.
-- The first-login password change flow is not fully wired between the backend exception and the frontend handler.
-- No frontend route guards — unauthenticated users can navigate directly to protected pages (the API calls will fail, but the UI shell still renders).
-- `MyCourses` shows raw course IDs instead of course names.
-- `StudentDashboard` is a placeholder with no live data.
-
-**Roadmap**
-- [ ] Fix `SecurityConfig` rule ordering for `/attendance/my`
-- [ ] Add frontend route guards based on JWT role
-- [ ] Wire the first-login change-password flow end-to-end
-- [ ] Enrich `MyCourses` with course name and instructor details
-- [ ] Add `@Transactional` to `StudentService.addStudent`
-- [ ] Replace hardcoded department list (CSE / IT / ECE) with a dynamic API
-- [ ] Add edit functionality for marks and students
-- [ ] Pagination controls in the Students table UI
-- [ ] Unit and integration tests (JUnit 5 + Mockito)
+**Frontend**
+- Add an edit flow for students — currently only add and delete exist
+- Add pagination controls to the Students table (the backend already supports it via the `Pageable` param)
+- Replace `window.alert()` calls with toast notifications (e.g. react-hot-toast) for a better UX
+- Move the API base URL from `api.js` into a `.env` file
+- Add a 404 Not Found page for unmatched routes in `App.js`
+- Consider React Query or SWR for data fetching to get automatic caching and background re-fetching
 
 ---
 
