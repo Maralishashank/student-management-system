@@ -150,8 +150,8 @@ sms/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/student-management-system.git
-   cd sms/backend
+   git clone https://github.com/Maralishashank/student-management-system.git
+   cd student-management-system/backend
    ```
 
 2. Create a MySQL database:
