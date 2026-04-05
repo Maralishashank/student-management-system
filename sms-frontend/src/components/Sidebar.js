@@ -1,6 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import "../styles/sms.css";
+
+const links = [
+  { to: "/admin",           icon: "📊", label: "Dashboard" },
+  { to: "/students",        icon: "👥", label: "Students" },
+  { to: "/courses",         icon: "📚", label: "Courses" },
+  { to: "/marks",           icon: "🎯", label: "Marks" },
+  { to: "/mark-attendance", icon: "✅", label: "Mark Attendance" },
+  { to: "/attendance",      icon: "📋", label: "Attendance Report" },
+  { to: "/announcements",   icon: "📢", label: "Announcements" },
+];
 
 function Sidebar() {
+  const { pathname } = useLocation();
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -8,49 +20,35 @@ function Sidebar() {
   };
 
   return (
-    <div className="bg-dark text-white p-3" style={{ width: "220px", height: "100vh" }}>
+    <aside className="sms-sidebar">
+      <div className="sms-sidebar-brand">
+        <div className="sms-sidebar-brand-icon">S</div>
+        <div>
+          <div className="sms-sidebar-brand-text">SMS Portal</div>
+          <div className="sms-sidebar-brand-sub">Admin Panel</div>
+        </div>
+      </div>
 
-      <h4 className="text-center mb-4">Admin Panel</h4>
+      <nav className="sms-sidebar-nav">
+        <div className="sms-sidebar-section">Main Menu</div>
+        {links.map(({ to, icon, label }) => (
+          <Link
+            key={to}
+            to={to}
+            className={`sms-sidebar-link ${pathname === to ? "active" : ""}`}
+          >
+            <span className="sms-sidebar-icon">{icon}</span>
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      <ul className="nav flex-column">
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/admin">Dashboard</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/students">Students</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/courses">Courses</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/marks">Marks</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/mark-attendance">Mark Attendance</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/announcements">Announcements</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/attendance">Attendance Report</Link>
-        </li>
-
-      </ul>
-
-      {/* FIX: <br> inside <ul> is invalid HTML — a block element inside a list container.
-               Replaced with a top margin on the button. */}
-      <button className="btn btn-danger mt-3 w-100" onClick={logout}>
-        Logout
-      </button>
-
-    </div>
+      <div className="sms-sidebar-footer">
+        <button className="sms-logout-btn" onClick={logout}>
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </aside>
   );
 }
 

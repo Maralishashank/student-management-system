@@ -1,189 +1,127 @@
+// Marks.js - Admin page
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import "../styles/sms.css";
 
 function Marks() {
-
   const [marks, setMarks] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [studentId, setStudentId] = useState("");
   const [subject, setSubject] = useState("");
   const [score, setScore] = useState("");
   const [maxScore, setMaxScore] = useState("");
-  const [students, setStudents] = useState([]);
-  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const loadMarks = async () => {
-    try {
-      const res = await API.get("/marks");
-      setMarks(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const loadMarks    = () => API.get("/marks").then(r => setMarks(r.data)).catch(console.log);
+  const loadStudents = () => API.get("/students").then(r => setStudents(r.data.content ?? [])).catch(console.log);
 
-  const loadStudents = async () => {
-    try {
-      const res = await API.get("/students");
-      // FIX: Added ?? [] null guard — same crash risk as in Students.js
-      setStudents(res.data.content ?? []);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  useEffect(() => { Promise.all([loadMarks(), loadStudents()]).finally(() => setLoading(false)); }, []);
 
-  useEffect(() => {
-    loadMarks();
-    loadStudents();
-  }, []);
-
-  const handleStudentChange = async (e) => {
+  const onStudentChange = async (e) => {
     const id = e.target.value;
-    setStudentId(id);
-    setSubject("");
-    setSubjects([]);
-
-    // FIX: The original code used strict equality (s.id === id).
-    //      e.target.value is always a string, but s.id from the API is a number.
-    //      Strict equality between "5" and 5 is false, so student was always
-    //      undefined and subjects never loaded.
-    //      Fixed by converting id to a Number before comparing.
-    const student = students.find(s => s.id === Number(id));
-
-    if (student) {
-      try {
-        const res = await API.get(`/subjects/department/${student.department}`);
-        setSubjects(res.data);
-      } catch (err) {
-        console.log("Failed to load subjects:", err);
-      }
+    setStudentId(id); setSubject(""); setSubjects([]);
+    const s = students.find(s => s.id === Number(id));
+    if (s) {
+      try { const r = await API.get(`/subjects/department/${s.department}`); setSubjects(r.data); }
+      catch {}
     }
   };
 
-  const addMarks = async () => {
-
-    if (!studentId || !subject || !score || !maxScore) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
+  const add = async () => {
+    if (!studentId || !subject || !score || !maxScore) return alert("Fill in all fields.");
     try {
-      await API.post("/marks", {
-        // FIX: Send as numbers not strings — the backend entity expects Long/int
-        studentId: Number(studentId),
-        subject,
-        score: Number(score),
-        maxScore: Number(maxScore)
-      });
+      await API.post("/marks", { studentId: Number(studentId), subject, score: Number(score), maxScore: Number(maxScore) });
+      setStudentId(""); setSubject(""); setScore(""); setMaxScore(""); setSubjects([]);
       loadMarks();
-      alert("Marks added");
-      setStudentId("");
-      setSubject("");
-      setScore("");
-      setMaxScore("");
-      setSubjects([]);
-    } catch (error) {
-      const msg = error.response?.data?.error || "Error adding marks";
-      alert(msg);
-    }
+      alert("Marks added successfully!");
+    } catch (e) { alert(e.response?.data?.error || "Error adding marks"); }
   };
+
+  const pct = (m) => m.maxScore > 0 ? Math.round((m.score / m.maxScore) * 100) : 0;
+  const gradeLetter = (p) => p >= 90 ? "A+" : p >= 80 ? "A" : p >= 70 ? "B" : p >= 60 ? "C" : "D";
+  const gradeCls    = (p) => p >= 70 ? "grade-a" : p >= 60 ? "grade-b" : p >= 50 ? "grade-c" : "grade-d";
 
   return (
-    <div>
-      <Navbar />
-      <div className="d-flex">
-        <Sidebar />
-        <div className="container mt-4">
+    <div className="sms-layout">
+      <Sidebar />
+      <div className="sms-main">
+        <Navbar />
+        <div className="sms-content">
+          <div className="sms-page-header">
+            <div className="sms-page-title">Marks Management</div>
+            <div className="sms-page-sub">Record and view student subject scores</div>
+          </div>
 
-          <h2>Marks</h2>
-
-          <div className="card p-3 mb-4">
-            <h5>Add Marks</h5>
-            <div className="row g-2">
-
-              <div className="col">
-                <select
-                  className="form-control"
-                  value={studentId}
-                  onChange={handleStudentChange}
-                >
-                  <option value="">Select Student</option>
-                  {students.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.department})
-                    </option>
-                  ))}
-                </select>
+          <div className="sms-card" style={{ marginBottom: 20 }}>
+            <div className="sms-card-header"><span className="sms-card-title">➕ Add Marks</span></div>
+            <div className="sms-card-body">
+              <div className="sms-form-row">
+                <div className="sms-form-group">
+                  <label className="sms-label">Student</label>
+                  <select className="sms-select" value={studentId} onChange={onStudentChange}>
+                    <option value="">Select student</option>
+                    {students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.department})</option>)}
+                  </select>
+                </div>
+                <div className="sms-form-group">
+                  <label className="sms-label">Subject</label>
+                  <select className="sms-select" value={subject} onChange={e => setSubject(e.target.value)} disabled={!subjects.length}>
+                    <option value="">{studentId ? "Select subject" : "Select student first"}</option>
+                    {subjects.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="sms-form-group" style={{ maxWidth: 110 }}>
+                  <label className="sms-label">Score</label>
+                  <input className="sms-input" type="number" min="0" placeholder="0" value={score} onChange={e => setScore(e.target.value)} />
+                </div>
+                <div className="sms-form-group" style={{ maxWidth: 110 }}>
+                  <label className="sms-label">Max Score</label>
+                  <input className="sms-input" type="number" min="1" placeholder="100" value={maxScore} onChange={e => setMaxScore(e.target.value)} />
+                </div>
+                <div style={{ alignSelf: "flex-end" }}>
+                  <button className="sms-btn sms-btn-primary" onClick={add}>Add Marks</button>
+                </div>
               </div>
-
-              <div className="col">
-                <select
-                  className="form-control"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  disabled={subjects.length === 0}
-                >
-                  <option value="">
-                    {studentId ? "Select Subject" : "Select student first"}
-                  </option>
-                  {subjects.map((sub, i) => (
-                    <option key={i} value={sub.name}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col">
-                <input
-                  className="form-control"
-                  placeholder="Score"
-                  type="number"
-                  min="0"
-                  value={score}
-                  onChange={(e) => setScore(e.target.value)}
-                />
-              </div>
-
-              <div className="col">
-                <input
-                  className="form-control"
-                  placeholder="Max Score"
-                  type="number"
-                  min="1"
-                  value={maxScore}
-                  onChange={(e) => setMaxScore(e.target.value)}
-                />
-              </div>
-
-              <div className="col-auto">
-                <button className="btn btn-primary" onClick={addMarks}>Add</button>
-              </div>
-
             </div>
           </div>
 
-          <table className="table table-bordered">
-            <thead className="table-dark">
-              <tr>
-                <th>Student ID</th>
-                <th>Subject</th>
-                <th>Score</th>
-                <th>Max Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {marks.map((m, i) => (
-                <tr key={i}>
-                  <td>{m.studentId}</td>
-                  <td>{m.subject}</td>
-                  <td>{m.score}</td>
-                  <td>{m.maxScore}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
+          <div className="sms-card">
+            <div className="sms-card-header"><span className="sms-card-title">📋 All Marks</span></div>
+            <div className="sms-table-wrap">
+              {loading ? <div className="sms-spinner" />
+                : marks.length === 0
+                ? <div className="sms-empty"><div className="sms-empty-icon">🎯</div><div className="sms-empty-text">No marks recorded yet</div></div>
+                : (
+                  <table className="sms-table">
+                    <thead><tr><th>Student ID</th><th>Subject</th><th>Score</th><th>Percentage</th><th>Grade</th></tr></thead>
+                    <tbody>
+                      {marks.map((m, i) => {
+                        const p = pct(m);
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontWeight: 600, color: "#64748b" }}>#{m.studentId}</td>
+                            <td style={{ fontWeight: 600 }}>{m.subject}</td>
+                            <td>{m.score} / {m.maxScore}</td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div className="sms-progress" style={{ width: 80 }}>
+                                  <div className={`sms-progress-bar ${p >= 75 ? "green" : p >= 50 ? "amber" : "red"}`} style={{ width: `${p}%` }} />
+                                </div>
+                                <span style={{ fontSize: 12, fontWeight: 700 }}>{p}%</span>
+                              </div>
+                            </td>
+                            <td><div className={`sms-grade ${gradeCls(p)}`}>{gradeLetter(p)}</div></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

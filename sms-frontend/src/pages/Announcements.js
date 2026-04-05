@@ -1,153 +1,85 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import API from "../services/api";
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import { useLocation } from "react-router-dom";
 import StudentSidebar from "../components/StudentSidebar";
+import Navbar from "../components/Navbar";
+import "../styles/sms.css";
 
-function Announcements(){
+function Announcements() {
+  const [list, setList] = useState([]);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const { pathname } = useLocation();
+  const isStudent = pathname.includes("/student");
 
-  const [announcements,setAnnouncements] = useState([]);
-  const [title,setTitle] = useState("");
-  const [message,setMessage] = useState("");
-  const location = useLocation();
-  const isStudent = location.pathname.includes("/student");
+  const load = () => API.get("/announcements").then(r => setList(r.data)).catch(console.log).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
 
-  const loadAnnouncements = async () => {
+  const post = async () => {
+    if (!title.trim() || !message.trim()) return alert("Fill in both fields.");
+    try { await API.post("/announcements", { title, message }); setTitle(""); setMessage(""); load(); }
+    catch (e) { alert(e.response?.data?.error || "Error posting announcement"); }
+  };
 
-    try{
+  const SidebarComp = isStudent ? StudentSidebar : Sidebar;
 
-      const res = await API.get("/announcements");
-
-      setAnnouncements(res.data);
-
-    }catch(error){
-
-      console.log(error);
-
-    }
-
-  }
-
-  useEffect(()=>{
-
-    loadAnnouncements();
-
-  },[])
-
-  const addAnnouncement = async () => {
-
-    try{
-
-      await API.post("/announcements",{
-        title,
-        message
-      });
-
-      setTitle("");
-      setMessage("");
-
-      loadAnnouncements();
-
-    }catch(error){
-
-      alert("Error creating announcement");
-
-    }
-
-  }
-
-  return(
-
-    <div>
-
-      <Navbar/>
-
-      <div className="d-flex">
-
-        {isStudent ? <StudentSidebar/> : <Sidebar/>}
-
-        <div className="container mt-4">
-
-          <h2>Announcements</h2>
-          {!isStudent && (
-
-          <div className="card p-3 mb-4">
-
-            <h5>Create Announcement</h5>
-
-            <div className="row">
-
-              <div className="col">
-                <input
-                  className="form-control"
-                  placeholder="Title"
-                  value={title}
-                  onChange={(e)=>setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="col">
-                <input
-                  className="form-control"
-                  placeholder="Message"
-                  value={message}
-                  onChange={(e)=>setMessage(e.target.value)}
-                />
-              </div>
-
-              <div className="col">
-                <button
-                  className="btn btn-primary"
-                  onClick={addAnnouncement}
-                >
-                  Post
-                </button>
-              </div>
-
-            </div>
-
+  return (
+    <div className="sms-layout">
+      <SidebarComp />
+      <div className="sms-main">
+        <Navbar />
+        <div className="sms-content">
+          <div className="sms-page-header">
+            <div className="sms-page-title">📢 Announcements</div>
+            <div className="sms-page-sub">{isStudent ? "Stay up to date with institution notices" : "Post and manage announcements"}</div>
           </div>
+
+          {!isStudent && (
+            <div className="sms-card" style={{ marginBottom: 24 }}>
+              <div className="sms-card-header"><span className="sms-card-title">✏️ New Announcement</span></div>
+              <div className="sms-card-body">
+                <div className="sms-form-row">
+                  <div className="sms-form-group">
+                    <label className="sms-label">Title</label>
+                    <input className="sms-input" placeholder="Announcement title" value={title} onChange={e => setTitle(e.target.value)} />
+                  </div>
+                  <div className="sms-form-group" style={{ flex: 2 }}>
+                    <label className="sms-label">Message</label>
+                    <input className="sms-input" placeholder="Write your announcement..." value={message} onChange={e => setMessage(e.target.value)} />
+                  </div>
+                  <div style={{ alignSelf: "flex-end" }}>
+                    <button className="sms-btn sms-btn-primary" onClick={post}>📢 Post</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
-          <table className="table table-bordered">
-
-            <thead className="table-dark">
-
-              <tr>
-
-                <th>Title</th>
-                <th>Message</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {announcements.map((a,i)=>(
-
-                <tr key={i}>
-
-                  <td>{a.title}</td>
-                  <td>{a.message}</td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
+          <div className="sms-card">
+            <div className="sms-card-header">
+              <span className="sms-card-title">All Announcements</span>
+              <span className="sms-badge sms-badge-indigo">{list.length}</span>
+            </div>
+            <div className="sms-card-body">
+              {loading ? <div className="sms-spinner" />
+                : list.length === 0
+                ? <div className="sms-empty"><div className="sms-empty-icon">📢</div><div className="sms-empty-text">No announcements yet</div></div>
+                : list.map((a, i) => (
+                  <div key={i} className="sms-announce-card">
+                    <div className="sms-announce-title">{a.title}</div>
+                    <div className="sms-announce-msg">{a.message}</div>
+                    {a.createdDate && <div className="sms-announce-date">📅 {a.createdDate}</div>}
+                  </div>
+                ))}
+            </div>
+          </div>
 
         </div>
-
       </div>
-
     </div>
-
-  )
-
+  );
 }
 
 export default Announcements;

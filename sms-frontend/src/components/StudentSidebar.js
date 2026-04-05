@@ -1,6 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import "../styles/sms.css";
+
+const links = [
+  { to: "/student",               icon: "🏠", label: "Dashboard" },
+  { to: "/my-marks",              icon: "🎯", label: "My Marks" },
+  { to: "/my-attendance",         icon: "✅", label: "My Attendance" },
+  { to: "/student/courses",       icon: "📚", label: "Courses" },
+  { to: "/my-courses",            icon: "🎓", label: "My Courses" },
+  { to: "/profile",               icon: "👤", label: "Profile" },
+  { to: "/student/announcements", icon: "📢", label: "Announcements" },
+];
 
 function StudentSidebar() {
+  const { pathname } = useLocation();
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -8,51 +20,35 @@ function StudentSidebar() {
   };
 
   return (
-    <div className="bg-dark text-white p-3" style={{ width: "220px", height: "100vh" }}>
+    <aside className="sms-sidebar">
+      <div className="sms-sidebar-brand">
+        <div className="sms-sidebar-brand-icon">S</div>
+        <div>
+          <div className="sms-sidebar-brand-text">SMS Portal</div>
+          <div className="sms-sidebar-brand-sub">Student Panel</div>
+        </div>
+      </div>
 
-      <h4 className="text-center mb-4">Student Panel</h4>
+      <nav className="sms-sidebar-nav">
+        <div className="sms-sidebar-section">My Space</div>
+        {links.map(({ to, icon, label }) => (
+          <Link
+            key={to}
+            to={to}
+            className={`sms-sidebar-link ${pathname === to ? "active" : ""}`}
+          >
+            <span className="sms-sidebar-icon">{icon}</span>
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      <ul className="nav flex-column">
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/student">Dashboard</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/my-marks">My Marks</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/my-attendance">My Attendance</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/student/courses">Courses</Link>
-        </li>
-
-        {/* FIX: Profile and My Courses were raw <Link> elements placed directly
-                 inside <ul> without <li> wrappers. This breaks Bootstrap's nav
-                 structure and causes inconsistent padding and alignment.
-                 Wrapped both in <li className="nav-item"> to match all other items. */}
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/my-courses">My Courses</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/profile">Profile</Link>
-        </li>
-
-        <li className="nav-item">
-          <Link className="nav-link text-white" to="/student/announcements">Announcements</Link>
-        </li>
-
-      </ul>
-
-      <button className="btn btn-danger mt-3 w-100" onClick={logout}>
-        Logout
-      </button>
-
-    </div>
+      <div className="sms-sidebar-footer">
+        <button className="sms-logout-btn" onClick={logout}>
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </aside>
   );
 }
 

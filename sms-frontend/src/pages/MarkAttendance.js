@@ -2,148 +2,113 @@ import { useEffect, useState } from "react";
 import API from "../services/api";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import "../styles/sms.css";
 
 function MarkAttendance() {
-
-  const [department, setDepartment] = useState("");
+  const [dept, setDept] = useState("");
   const [students, setStudents] = useState([]);
-  const [attendance, setAttendance] = useState({});
+  const [att, setAtt] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const loadStudents = async () => {
-    if (!department) return;
-    try {
-      const res = await API.get(`/students/department/${department}`);
-      setStudents(res.data);
-      setAttendance({}); // reset selections when department changes
-    } catch (err) {
-      console.error("Failed to load students:", err);
-      setStudents([]);
-    }
-  };
-
   useEffect(() => {
-    loadStudents();
-  }, [department]);
+    if (!dept) return;
+    API.get(`/students/department/${dept}`)
+      .then(r => { setStudents(r.data); setAtt({}); })
+      .catch(() => setStudents([]));
+  }, [dept]);
 
-  const toggleAttendance = (id, status) => {
-    setAttendance(prev => ({ ...prev, [id]: status }));
-  };
+  const toggle = (id, status) => setAtt(prev => ({ ...prev, [id]: status }));
 
-  const submitAttendance = async () => {
-
-    const unmarked = students.filter(s => !attendance[s.id]);
-    if (unmarked.length > 0) {
-      alert(`Please mark attendance for all students. ${unmarked.length} student(s) not marked.`);
-      return;
-    }
-
+  const submit = async () => {
+    const unmarked = students.filter(s => !att[s.id]);
+    if (unmarked.length) return alert(`${unmarked.length} student(s) not marked yet.`);
     setSubmitting(true);
     const today = new Date().toISOString().split("T")[0];
-
     try {
-      for (const studentId in attendance) {
-        await API.post("/attendance/mark", {
-          // FIX: Object.keys() always returns strings, but the backend Attendance
-          //      entity maps studentId to Long. Sending a string worked via JSON
-          //      coercion but is fragile. Explicitly parse to Number to be safe.
-          studentId: Number(studentId),
-          date: today,
-          status: attendance[studentId]
-        });
-      }
-      alert("Attendance marked successfully!");
-      setAttendance({});
-    } catch (err) {
-      const msg = err.response?.data?.error || "Failed to submit attendance. Please try again.";
-      alert(msg);
-    }
-
+      for (const id in att) await API.post("/attendance/mark", { studentId: Number(id), date: today, status: att[id] });
+      alert("Attendance submitted successfully!");
+      setAtt({});
+    } catch (e) { alert(e.response?.data?.error || "Submission failed"); }
     setSubmitting(false);
   };
 
-  const allMarked = students.length > 0 && students.every(s => attendance[s.id]);
+  const presentCount = Object.values(att).filter(v => v === "PRESENT").length;
+  const absentCount  = Object.values(att).filter(v => v === "ABSENT").length;
+  const allMarked    = students.length > 0 && students.every(s => att[s.id]);
 
   return (
-    <div>
-      <Navbar />
-      <div className="d-flex">
-        <Sidebar />
-        <div className="container mt-4">
+    <div className="sms-layout">
+      <Sidebar />
+      <div className="sms-main">
+        <Navbar />
+        <div className="sms-content">
+          <div className="sms-page-header">
+            <div className="sms-page-title">Mark Attendance</div>
+            <div className="sms-page-sub">Record today's attendance by department</div>
+          </div>
 
-          <h2>Mark Attendance</h2>
+          <div className="sms-card" style={{ marginBottom: 20 }}>
+            <div className="sms-card-body">
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <div className="sms-form-group" style={{ maxWidth: 200 }}>
+                  <label className="sms-label">Select Department</label>
+                  <select className="sms-select" value={dept} onChange={e => setDept(e.target.value)}>
+                    <option value="">Choose department</option>
+                    <option value="CSE">CSE</option>
+                    <option value="IT">IT</option>
+                    <option value="ECE">ECE</option>
+                  </select>
+                </div>
+                {students.length > 0 && (
+                  <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
+                    <span className="sms-badge sms-badge-success">✅ {presentCount} Present</span>
+                    <span className="sms-badge sms-badge-danger">❌ {absentCount} Absent</span>
+                    <span className="sms-badge sms-badge-indigo">👥 {students.length} Total</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-          <select
-            className="form-control mb-4"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-          >
-            <option value="">Select Department</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-          </select>
-
-          {students.length === 0 && department && (
-            <p className="text-muted">No students found for {department}.</p>
+          {dept && students.length === 0 && (
+            <div className="sms-empty"><div className="sms-empty-icon">👥</div><div className="sms-empty-text">No students in {dept}</div></div>
           )}
 
           {students.length > 0 && (
-            <>
-              <table className="table table-bordered">
-                <thead className="table-dark">
-                  <tr>
-                    <th>Name</th>
-                    <th>Present</th>
-                    <th>Absent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map(s => (
-                    <tr key={s.id} style={{
-                      background: attendance[s.id] === "PRESENT"
-                        ? "#e8f5e9"
-                        : attendance[s.id] === "ABSENT"
-                        ? "#ffebee"
-                        : "white"
-                    }}>
-                      <td>{s.name}</td>
-                      <td>
-                        <input
-                          type="radio"
-                          name={`att-${s.id}`}
-                          checked={attendance[s.id] === "PRESENT"}
-                          onChange={() => toggleAttendance(s.id, "PRESENT")}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="radio"
-                          name={`att-${s.id}`}
-                          checked={attendance[s.id] === "ABSENT"}
-                          onChange={() => toggleAttendance(s.id, "ABSENT")}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="d-flex align-items-center gap-3">
-                <button
-                  className="btn btn-primary"
-                  onClick={submitAttendance}
-                  disabled={submitting || !allMarked}
-                >
-                  {submitting ? "Submitting..." : "Submit Attendance"}
-                </button>
-                {!allMarked && (
-                  <span className="text-muted" style={{ fontSize: "13px" }}>
-                    Mark all students before submitting
-                  </span>
-                )}
+            <div className="sms-card">
+              <div className="sms-card-header">
+                <span className="sms-card-title">👥 {dept} Students — {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</span>
               </div>
-            </>
+              <div style={{ padding: "8px 20px 16px" }}>
+                {students.map(s => {
+                  const status = att[s.id];
+                  return (
+                    <div key={s.id} className={`sms-att-row ${status === "PRESENT" ? "present" : status === "ABSENT" ? "absent" : ""}`}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: status === "PRESENT" ? "#d1fae5" : status === "ABSENT" ? "#fee2e2" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#334155", flexShrink: 0 }}>
+                        {s.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+                      </div>
+                      <span className="sms-att-name">{s.name}</span>
+                      <div className="sms-att-options">
+                        <label className="sms-att-option">
+                          <input type="radio" name={`att-${s.id}`} checked={status === "PRESENT"} onChange={() => toggle(s.id, "PRESENT")} />
+                          <label style={{ color: "#059669", fontWeight: 700, cursor: "pointer" }}>Present</label>
+                        </label>
+                        <label className="sms-att-option">
+                          <input type="radio" name={`att-${s.id}`} checked={status === "ABSENT"} onChange={() => toggle(s.id, "ABSENT")} />
+                          <label style={{ color: "#dc2626", fontWeight: 700, cursor: "pointer" }}>Absent</label>
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ padding: "12px 20px 16px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 12, alignItems: "center" }}>
+                <button className="sms-btn sms-btn-primary" onClick={submit} disabled={submitting || !allMarked}>
+                  {submitting ? "Submitting..." : "✅ Submit Attendance"}
+                </button>
+                {!allMarked && <span style={{ fontSize: 12, color: "#94a3b8" }}>Mark all students to enable submit</span>}
+              </div>
+            </div>
           )}
 
         </div>

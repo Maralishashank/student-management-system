@@ -1,146 +1,229 @@
 import { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "../styles/sms.css";
 
 function ChangePassword() {
-
   const navigate = useNavigate();
-
   const [oldPassword, setOldPassword] = useState("student123");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const strength = (pwd) => {
+    if (!pwd) return { level: 0, label: "", color: "" };
+    let score = 0;
+    if (pwd.length >= 8)           score++;
+    if (/[A-Z]/.test(pwd))         score++;
+    if (/[0-9]/.test(pwd))         score++;
+    if (/[^A-Za-z0-9]/.test(pwd))  score++;
+    const map = [
+      { level: 0, label: "",         color: "" },
+      { level: 1, label: "Weak",     color: "#ef4444" },
+      { level: 2, label: "Fair",     color: "#f59e0b" },
+      { level: 3, label: "Good",     color: "#3b82f6" },
+      { level: 4, label: "Strong",   color: "#10b981" },
+    ];
+    return map[score];
+  };
+
+  const pwdStrength = strength(newPassword);
+
   const handleSubmit = async () => {
-
     setError("");
-
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    // Check token exists — Login.js stored the first-login JWT before navigating here
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Session expired. Please log in again.");
-      navigate("/");
-      return;
-    }
+    if (newPassword.length < 6)         return setError("Password must be at least 6 characters.");
+    if (newPassword !== confirmPassword) return setError("Passwords do not match.");
+    if (!localStorage.getItem("token")) { setError("Session expired. Please log in again."); navigate("/"); return; }
 
     setLoading(true);
-
     try {
-      // FIX: The token stored by Login.js on first-login is a real JWT (just short-lived,
-      // 15 minutes). The api.js interceptor attaches it automatically as the Authorization
-      // header, so this call is properly authenticated.
-      // The backend's /auth/change-password reads the username from the token,
-      // verifies the old password, sets the new one, and clears firstLogin=false.
-      await API.post("/auth/change-password", {
-        oldPassword,
-        newPassword
-      });
-
-      // Clear the first-login token — the student must log in fresh with their new password
+      await API.post("/auth/change-password", { oldPassword, newPassword });
       localStorage.removeItem("token");
-
-      alert("Password changed successfully! Please log in with your new password.");
-      navigate("/");
-
+      navigate("/", { state: { message: "Password changed! Please log in with your new password." } });
     } catch (err) {
-      // err.response.data.error will contain the actual message from GlobalExceptionHandler
-      // e.g. "Old password incorrect"
-      const msg = err.response?.data?.error || "Failed to change password. Please try again.";
-      setError(msg);
+      setError(err.response?.data?.error || "Failed to change password. Please try again.");
     }
-
     setLoading(false);
   };
 
-  return (
-    <div style={{
-      height: "100vh", display: "flex", justifyContent: "center", alignItems: "center",
-      background: "linear-gradient(270deg, #667eea, #764ba2, #6b73ff)",
-      backgroundSize: "400% 400%", animation: "gradientMove 10s ease infinite"
-    }}>
+  const EyeIcon = ({ show, toggle }) => (
+    <button onClick={toggle} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "#94a3b8", display: "flex", alignItems: "center" }}>
+      {show
+        ? <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        : <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      }
+    </button>
+  );
 
+  const Field = ({ label, value, onChange, show, onToggle, placeholder }) => (
+    <div>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".4px" }}>{label}</label>
       <div style={{
-        width: "380px", padding: "35px", borderRadius: "20px",
-        backdropFilter: "blur(15px)", background: "rgba(255,255,255,0.15)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.25)", color: "white"
-      }}>
-
-        <h3 style={{ textAlign: "center", marginBottom: "8px" }}>Set New Password</h3>
-        <p style={{ textAlign: "center", fontSize: "14px", marginBottom: "24px", opacity: 0.85 }}>
-          This is your first login. Please set a new password to continue.
-        </p>
-
-        <div style={inputWrapper}>
-          <input
-            type="password" placeholder="Current password (student123)"
-            value={oldPassword} onChange={(e) => setOldPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={inputWrapper}>
-          <input
-            type="password" placeholder="New password (min 6 characters)"
-            value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={inputWrapper}>
-          <input
-            type="password" placeholder="Confirm new password"
-            value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        {error && (
-          <p style={{ color: "#ffcccc", fontSize: "13px", marginBottom: "10px" }}>{error}</p>
-        )}
-
-        <button
-          onClick={handleSubmit} disabled={loading}
-          style={{
-            width: "100%", padding: "12px", borderRadius: "10px",
-            border: "none", background: "#ffffff", color: "#333",
-            fontWeight: "600", cursor: "pointer", marginTop: "8px"
-          }}
-        >
-          {loading ? "Saving..." : "Set Password & Continue"}
-        </button>
-
+        display: "flex", alignItems: "center", gap: 10,
+        background: "white", border: "1.5px solid #e2e8f0", borderRadius: 10, padding: "11px 14px",
+        transition: "all .18s",
+      }}
+        onFocus={e => e.currentTarget.style.borderColor = "#4f46e5"}
+        onBlur={e => e.currentTarget.style.borderColor = "#e2e8f0"}
+      >
+        <svg width="15" height="15" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input
+          type={show ? "text" : "password"}
+          placeholder={placeholder}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+          style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#1e293b", background: "transparent", fontFamily: "inherit" }}
+        />
+        <EyeIcon show={show} toggle={onToggle} />
       </div>
-
-      <style>{`
-        @keyframes gradientMove {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-      `}</style>
     </div>
   );
+
+  return (
+    <>
+      <style>{`
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes float  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div style={{ display: "flex", height: "100vh", fontFamily: "'Inter', -apple-system, sans-serif" }}>
+
+        {/* ── Left panel ── */}
+        <div style={{
+          flex: 1, background: "linear-gradient(145deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%)",
+          display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+          padding: "60px 48px", position: "relative", overflow: "hidden", textAlign: "center",
+        }}>
+          <div style={{ position: "absolute", top: -80, right: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(99,102,241,.15)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -60, left: -60, width: 220, height: 220, borderRadius: "50%", background: "rgba(6,182,212,.12)", pointerEvents: "none" }} />
+
+          <div style={{ animation: "float 4s ease-in-out infinite", marginBottom: 32 }}>
+            <div style={{
+              width: 88, height: 88, borderRadius: 24,
+              background: "linear-gradient(135deg, #6366f1, #06b6d4)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 40, boxShadow: "0 16px 40px rgba(99,102,241,.5)", margin: "0 auto",
+            }}>🔐</div>
+          </div>
+
+          <div style={{ animation: "fadeUp .6s .1s ease both", opacity: 0, animationFillMode: "forwards" }}>
+            <h2 style={{ color: "white", fontSize: 28, fontWeight: 900, letterSpacing: "-.5px", marginBottom: 12, lineHeight: 1.2 }}>
+              Set your password
+            </h2>
+            <p style={{ color: "rgba(255,255,255,.6)", fontSize: 14, lineHeight: 1.8, maxWidth: 300, margin: "0 auto" }}>
+              This is your first login. Please choose a strong password to secure your account.
+            </p>
+          </div>
+
+          {/* Tips */}
+          <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 320, animation: "fadeUp .6s .2s ease both", opacity: 0, animationFillMode: "forwards" }}>
+            {[
+              { icon: "✅", text: "At least 6 characters long" },
+              { icon: "🔤", text: "Mix uppercase and lowercase letters" },
+              { icon: "🔢", text: "Include numbers for extra security" },
+              { icon: "✨", text: "Add symbols like @, #, ! for strength" },
+            ].map((tip, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "10px 14px" }}>
+                <span style={{ fontSize: 16 }}>{tip.icon}</span>
+                <span style={{ color: "rgba(255,255,255,.7)", fontSize: 13 }}>{tip.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Right panel — form ── */}
+        <div style={{
+          width: 480, background: "#f8fafc",
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          padding: "60px 52px",
+          animation: "fadeUp .5s .15s ease both", opacity: 0, animationFillMode: "forwards",
+        }}>
+
+          {/* Back link */}
+          <button onClick={() => { localStorage.removeItem("token"); navigate("/"); }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "none", color: "#64748b", fontSize: 13, cursor: "pointer", marginBottom: 32, padding: 0, fontFamily: "inherit" }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to login
+          </button>
+
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fef3c7", borderRadius: 20, padding: "4px 12px", marginBottom: 18 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#d97706" }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e", letterSpacing: ".3px" }}>FIRST LOGIN</span>
+            </div>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#1e293b", letterSpacing: "-.5px", marginBottom: 8, lineHeight: 1.2 }}>
+              Create your password
+            </h2>
+            <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.6 }}>
+              Your default password is <code style={{ background: "#f1f5f9", padding: "2px 7px", borderRadius: 5, fontWeight: 700, color: "#334155" }}>student123</code>. Set a new one to continue.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            <Field label="Current Password" value={oldPassword} onChange={setOldPassword} show={false} onToggle={() => {}} placeholder="Your current password" />
+
+            <Field label="New Password" value={newPassword} onChange={setNewPassword} show={showNew} onToggle={() => setShowNew(!showNew)} placeholder="Choose a strong password" />
+
+            {/* Strength bar */}
+            {newPassword && (
+              <div style={{ marginTop: -8 }}>
+                <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ flex: 1, height: 3, borderRadius: 99, background: i <= pwdStrength.level ? pwdStrength.color : "#e2e8f0", transition: "background .3s" }} />
+                  ))}
+                </div>
+                {pwdStrength.label && <span style={{ fontSize: 11, fontWeight: 700, color: pwdStrength.color }}>{pwdStrength.label} password</span>}
+              </div>
+            )}
+
+            <Field label="Confirm New Password" value={confirmPassword} onChange={setConfirmPassword} show={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} placeholder="Re-enter your new password" />
+
+            {/* Match indicator */}
+            {confirmPassword && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: -8, fontSize: 12, fontWeight: 600 }}>
+                {newPassword === confirmPassword
+                  ? <><span style={{ color: "#10b981" }}>✓</span><span style={{ color: "#10b981" }}>Passwords match</span></>
+                  : <><span style={{ color: "#ef4444" }}>✗</span><span style={{ color: "#ef4444" }}>Passwords don't match</span></>
+                }
+              </div>
+            )}
+
+            {error && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>
+                <svg width="14" height="14" fill="none" stroke="#ef4444" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span style={{ fontSize: 13, color: "#dc2626", fontWeight: 500 }}>{error}</span>
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                width: "100%", padding: "13px", borderRadius: 10, border: "none",
+                background: "#4f46e5", color: "white",
+                fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? .7 : 1, transition: "all .18s ease",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                fontFamily: "inherit", marginTop: 4,
+                boxShadow: "0 4px 14px rgba(79,70,229,.3)",
+              }}
+            >
+              {loading
+                ? <><svg style={{ animation: "spin .7s linear infinite" }} width="16" height="16" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving...</>
+                : <>Set Password &amp; Continue <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
-
-const inputWrapper = {
-  display: "flex", alignItems: "center", background: "#fff",
-  borderRadius: "12px", padding: "12px", marginBottom: "15px"
-};
-
-const inputStyle = {
-  flex: 1, border: "none", outline: "none",
-  fontSize: "14px", marginLeft: "8px", background: "transparent", color: "#333"
-};
 
 export default ChangePassword;

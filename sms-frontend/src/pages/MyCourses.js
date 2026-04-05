@@ -2,85 +2,70 @@ import { useEffect, useState } from "react";
 import API from "../services/api";
 import Navbar from "../components/Navbar";
 import StudentSidebar from "../components/StudentSidebar";
+import "../styles/sms.css";
+
+const DEPT_COLORS = { CSE: { bg: "#ede9fe", color: "#4338ca" }, IT: { bg: "#cffafe", color: "#164e63" }, ECE: { bg: "#fef3c7", color: "#92400e" } };
 
 function MyCourses() {
-
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadCourses = async () => {
-    try {
-      // FIX: Previously only fetched /enroll/my which returns { id, studentId, courseId }.
-      //      The table showed the raw courseId number which is useless to a student.
-      //      Now we fetch both enrollments and the full courses list in parallel,
-      //      then join them by courseId so we can display the course name, instructor etc.
-      const [enrollRes, coursesRes] = await Promise.all([
-        API.get("/enroll/my"),
-        API.get("/courses")
-      ]);
-
-      const enrollments = enrollRes.data;
-      const allCourses = coursesRes.data;
-
-      // Build a lookup map: courseId → course object
-      const courseMap = {};
-      allCourses.forEach(c => { courseMap[c.id] = c; });
-
-      // Join: for each enrollment attach the full course details
-      const joined = enrollments.map(e => ({
-        enrollmentId: e.id,
-        ...courseMap[e.courseId]
-      })).filter(c => c.id); // filter out any enrollments whose course was deleted
-
-      setEnrolledCourses(joined);
-    } catch (err) {
-      console.error("Failed to load courses:", err);
-      setEnrolledCourses([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadCourses();
+    Promise.all([API.get("/enroll/my"), API.get("/courses")])
+      .then(([e, c]) => {
+        const map = {};
+        c.data.forEach(x => { map[x.id] = x; });
+        setCourses(e.data.map(en => ({ enrollmentId: en.id, ...map[en.courseId] })).filter(x => x.id));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div>
-      <Navbar />
-      <div className="d-flex">
-        <StudentSidebar />
-        <div className="container mt-4">
+    <div className="sms-layout">
+      <StudentSidebar />
+      <div className="sms-main">
+        <Navbar />
+        <div className="sms-content">
+          <div className="sms-page-header">
+            <div className="sms-page-title">My Courses</div>
+            <div className="sms-page-sub">{courses.length} course(s) enrolled</div>
+          </div>
 
-          <h2>My Courses</h2>
-
-          {loading ? (
-            <p className="text-muted">Loading...</p>
-          ) : enrolledCourses.length === 0 ? (
-            <p className="text-muted">You are not enrolled in any courses yet.</p>
-          ) : (
-            <table className="table table-bordered">
-              <thead className="table-dark">
-                <tr>
-                  <th>Course Name</th>
-                  <th>Instructor</th>
-                  <th>Credits</th>
-                  <th>Department</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrolledCourses.map(c => (
-                  <tr key={c.enrollmentId}>
-                    <td>{c.name}</td>
-                    <td>{c.instructor}</td>
-                    <td>{c.credits}</td>
-                    <td>{c.department}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
+          {loading ? <div className="sms-spinner" />
+            : courses.length === 0
+            ? (
+              <div className="sms-card">
+                <div className="sms-empty" style={{ padding: 60 }}>
+                  <div className="sms-empty-icon">🎓</div>
+                  <div className="sms-empty-text">You haven't enrolled in any courses yet.</div>
+                  <div style={{ marginTop: 12 }}>
+                    <a href="/student/courses" className="sms-btn sms-btn-primary" style={{ textDecoration: "none" }}>Browse Courses</a>
+                  </div>
+                </div>
+              </div>
+            )
+            : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                {courses.map(c => {
+                  const dc = DEPT_COLORS[c.department] || { bg: "#f1f5f9", color: "#334155" };
+                  return (
+                    <div key={c.enrollmentId} className="sms-card" style={{ padding: 20 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: dc.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>📘</div>
+                        <span className="sms-badge" style={{ background: dc.bg, color: dc.color }}>{c.department}</span>
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4, color: "#1e293b" }}>{c.name}</div>
+                      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>👨‍🏫 {c.instructor}</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span className="sms-badge sms-badge-indigo">🎓 {c.credits} Credits</span>
+                        <span className="sms-badge sms-badge-success">✅ Enrolled</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
         </div>
       </div>
     </div>

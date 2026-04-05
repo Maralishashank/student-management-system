@@ -3,89 +3,67 @@ import API from "../services/api";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import DashboardCharts from "../components/DashboardCharts";
+import "../styles/sms.css";
 
-function AdminDashboard(){
+function AdminDashboard() {
+  const [stats, setStats] = useState({ students: 0, courses: 0, marks: 0 });
+  const [loading, setLoading] = useState(true);
 
-  const [stats,setStats] = useState({
-    students:0,
-    courses:0,
-    marks:0
-  });
+  useEffect(() => {
+    API.get("/dashboard/stats")
+      .then(r => setStats(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
-  const loadStats = async () => {
+  const cards = [
+    { label: "Total Students", value: stats.students, icon: "👥", color: "indigo", hint: "Enrolled across all depts" },
+    { label: "Active Courses", value: stats.courses,  icon: "📚", color: "cyan",   hint: "Available for enrollment" },
+    { label: "Marks Recorded", value: stats.marks,    icon: "🎯", color: "green",  hint: "Subject scores logged" },
+  ];
 
-    try{
+  return (
+    <div className="sms-layout">
+      <Sidebar />
+      <div className="sms-main">
+        <Navbar />
+        <div className="sms-content">
 
-      const res = await API.get("/dashboard/stats");
-
-      setStats(res.data);
-
-    }catch(error){
-
-      console.log(error);
-
-    }
-
-  }
-
-  useEffect(()=>{
-    loadStats();
-  },[])
-
-  return(
-
-    <div>
-
-      <Navbar/>
-
-      <div className="d-flex">
-
-        <Sidebar/>
-
-        <div className="container mt-4">
-
-          <h2>Admin Dashboard</h2>
-
-          {/* Stats Cards */}
-
-          <div className="row">
-
-            <div className="col-md-4">
-              <div className="card text-center p-3">
-                <h5>Students</h5>
-                <h3>{stats.students}</h3>
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="card text-center p-3">
-                <h5>Courses</h5>
-                <h3>{stats.courses}</h3>
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="card text-center p-3">
-                <h5>Marks</h5>
-                <h3>{stats.marks}</h3>
-              </div>
-            </div>
-
+          <div className="sms-page-header">
+            <div className="sms-page-title">Admin Dashboard</div>
+            <div className="sms-page-sub">Welcome back — here's what's happening today.</div>
           </div>
 
-          {/* Charts Section */}
+          {loading ? <div className="sms-spinner" /> : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 28 }}>
+                {cards.map(c => (
+                  <div className="sms-stat-card" key={c.label}>
+                    <div className={`sms-stat-icon ${c.color}`}>{c.icon}</div>
+                    <div>
+                      <div className="sms-stat-value">{c.value}</div>
+                      <div className="sms-stat-label">{c.label}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{c.hint}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          <div className="mt-5">
-            <DashboardCharts/>
-          </div>
+              <div className="sms-card">
+                <div className="sms-card-header">
+                  <span className="sms-card-title">📊 Students per Department</span>
+                </div>
+                <div className="sms-card-body">
+                  <DashboardCharts />
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
-
       </div>
-
     </div>
-
-  )
+  );
 }
 
 export default AdminDashboard;
