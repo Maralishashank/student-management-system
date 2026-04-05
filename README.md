@@ -6,54 +6,39 @@ A full-stack web application for managing students, courses, marks, and attendan
 
 ## 📸 Screenshots
 
-### 👨‍💼 Admin
+### 🔐 Authentication
 
-<p align="center">
-  <b>Admin Dashboard</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <b>Students Page</b>
-</p>
-
-<p align="center">
-  <img src="screenshots/admin-dashboard.png.png" width="45%" />
-  <img src="screenshots/students.png.png" width="45%" />
-</p>
-
-<p align="center">
-  <b>Attendance</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <b>Marks</b>
-</p>
-
-
-<p align="center">
-  <img src="screenshots/attendance.png.png" width="45%" />
-  <img src="screenshots/marks.png.png" width="45%" />
-</p>
+| Login Page |
+|------------|
+| <img src="screenshots/login page.png" width="100%"> |
 
 ---
 
-### 🎓 Student
+### 👨‍💼 Admin Panel
 
-<p align="center">
-  <b>Student Dashboard</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <b>My Courses</b>
-</p>
+| Dashboard | Students |
+|----------|----------|
+| <img src="screenshots/admin-dashboard.png" width="100%"> | <img src="screenshots/students.png" width="100%"> |
 
-<p align="center">
-  <img src="screenshots/student-dashboard.png.png" width="45%" />
-  <img src="screenshots/my-courses.png.png" width="45%" />
-</p>
+| Attendance | Marks |
+|------------|-------|
+| <img src="screenshots/attendance.png" width="100%"> | <img src="screenshots/marks.png" width="100%"> |
 
+| Announcements |
+|--------------|
+| <img src="screenshots/announcements.png" width="100%"> |
 
-<p align="center">
-  <b>My Attendance</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <b>My Marks</b>
-</p>
+---
 
-<p align="center">
-  <img src="screenshots/my-attendance.png.png" width="45%" />
-  <img src="screenshots/my-marks.png.png" width="45%" />
-</p>
+### 🎓 Student Panel
 
+| Dashboard | My Courses |
+|----------|------------|
+| <img src="screenshots/student-dashboard.png" width="100%"> | <img src="screenshots/my-courses.png" width="100%"> |
+
+| My Attendance | My Marks |
+|---------------|----------|
+| <img src="screenshots/my-attendance.png" width="100%"> | <img src="screenshots/my-marks.png" width="100%"> |
 
 ---
 
