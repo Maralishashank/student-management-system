@@ -1,7 +1,6 @@
 package com.shashank.sms.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,59 +10,72 @@ import com.shashank.sms.exception.ResourceNotFoundException;
 import com.shashank.sms.Entity.Student;
 import com.shashank.sms.Entity.User;
 import com.shashank.sms.repository.StudentRepository;
+import com.shashank.sms.repository.UserRepository;
+import com.shashank.sms.repository.AttendanceRepository;
+import com.shashank.sms.repository.EnrollmentRepository;
+import com.shashank.sms.repository.MarksRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import com.shashank.sms.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class StudentService {
 
-    private final StudentRepository studentRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final StudentRepository    studentRepository;
+    private final UserRepository       userRepository;
+    private final PasswordEncoder      passwordEncoder;
+    private final AttendanceRepository attendanceRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final MarksRepository      marksRepository;
 
     public StudentService(StudentRepository studentRepository,
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
-        this.studentRepository = studentRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+                          UserRepository userRepository,
+                          PasswordEncoder passwordEncoder,
+                          AttendanceRepository attendanceRepository,
+                          EnrollmentRepository enrollmentRepository,
+                          MarksRepository marksRepository) {
+        this.studentRepository    = studentRepository;
+        this.userRepository       = userRepository;
+        this.passwordEncoder      = passwordEncoder;
+        this.attendanceRepository = attendanceRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.marksRepository      = marksRepository;
     }
 
     public Page<Student> getAllStudents(Pageable pageable) {
         return studentRepository.findAll(pageable);
     }
 
-    // FIX: Added @Transactional so that if userRepository.save() fails after
-    //      studentRepository.save() succeeds, both saves are rolled back together.
-    //      Without this, a failure midway left an orphaned Student with no User login account.
     @Transactional
     public StudentDTO addStudent(StudentDTO studentDTO) {
 
+        String email = studentDTO.getEmail().trim().toLowerCase();
+
+        // Explicit duplicate checks BEFORE any DB save.
+        // Previously the Student saved first, then the User save failed with
+        // DataIntegrityViolationException, leaving an orphaned Student row.
+        if (studentRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("A student with email '" + email + "' already exists.");
+        }
+        if (userRepository.findByUsername(email).isPresent()) {
+            throw new RuntimeException("A login account for '" + email + "' already exists.");
+        }
+
         Student student = new Student();
-        student.setName(studentDTO.getName());
-        student.setEmail(studentDTO.getEmail());
+        student.setName(studentDTO.getName().trim());
+        student.setEmail(email);
         student.setDepartment(studentDTO.getDepartment());
 
-        Student savedStudent = studentRepository.save(student);
+        Student saved = studentRepository.save(student);
 
         User user = new User();
-        user.setUsername(savedStudent.getEmail());
+        user.setUsername(saved.getEmail());
         user.setPassword(passwordEncoder.encode("student123"));
         user.setRole("STUDENT");
-        // firstLogin defaults to true in the User entity
-
         userRepository.save(user);
 
-        StudentDTO dto = new StudentDTO();
-        dto.setId(savedStudent.getId());
-        dto.setName(savedStudent.getName());
-        dto.setEmail(savedStudent.getEmail());
-        dto.setDepartment(savedStudent.getDepartment());
-
-        return dto;
+        return convertToDTO(saved);
     }
 
     public Student getStudentById(Long id) {
@@ -72,21 +84,55 @@ public class StudentService {
     }
 
     @Transactional
-    public Student updateStudent(Long id, Student studentDetails) {
+    public StudentDTO updateStudent(Long id, StudentDTO studentDTO) {
+
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
 
-        student.setName(studentDetails.getName());
-        student.setEmail(studentDetails.getEmail());
-        student.setDepartment(studentDetails.getDepartment());
+        String oldEmail = student.getEmail();
+        String newEmail = studentDTO.getEmail().trim().toLowerCase();
 
-        return studentRepository.save(student);
+        // Check new email is not already taken by a DIFFERENT student or user.
+        if (!oldEmail.equals(newEmail)) {
+            if (studentRepository.findByEmail(newEmail).isPresent()) {
+                throw new RuntimeException("Email '" + newEmail + "' is already in use by another student.");
+            }
+            if (userRepository.findByUsername(newEmail).isPresent()) {
+                throw new RuntimeException("A login account for '" + newEmail + "' already exists.");
+            }
+        }
+
+        student.setName(studentDTO.getName().trim());
+        student.setEmail(newEmail);
+        student.setDepartment(studentDTO.getDepartment());
+        studentRepository.save(student);
+
+        // Keep the User login username in sync when email changes.
+        if (!oldEmail.equals(newEmail)) {
+            userRepository.findByUsername(oldEmail).ifPresent(user -> {
+                user.setUsername(newEmail);
+                userRepository.save(user);
+            });
+        }
+
+        return convertToDTO(student);
     }
 
     @Transactional
     public void deleteStudent(Long id) {
+
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
+
+        // Clean up all related records so no orphaned data remains.
+        attendanceRepository.deleteByStudentId(id);
+        marksRepository.deleteByStudentId(id);
+        enrollmentRepository.deleteByStudentId(id);
+
+        // Delete the linked User login account so the email can be reused later.
+        userRepository.findByUsername(student.getEmail())
+                .ifPresent(userRepository::delete);
+
         studentRepository.delete(student);
     }
 
@@ -108,7 +154,7 @@ public class StudentService {
                 .toList();
     }
 
-    private StudentDTO convertToDTO(Student student) {
+    public StudentDTO convertToDTO(Student student) {
         if (student == null) return null;
         return new StudentDTO(
                 student.getId(),

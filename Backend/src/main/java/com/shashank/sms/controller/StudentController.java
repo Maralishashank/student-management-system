@@ -21,120 +21,75 @@ import com.shashank.sms.repository.StudentRepository;
 @RequestMapping("/students")
 public class StudentController {
 
-    private final StudentService studentService;
+    private final StudentService    studentService;
     private final StudentRepository studentRepository;
 
     public StudentController(StudentService studentService,
-            StudentRepository studentRepository) {
-this.studentService = studentService;
-this.studentRepository = studentRepository;
-}
+                             StudentRepository studentRepository) {
+        this.studentService    = studentService;
+        this.studentRepository = studentRepository;
+    }
 
-    // ADD STUDENT
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public StudentDTO addStudent(@Valid @RequestBody StudentDTO studentDTO){
+    public StudentDTO addStudent(@Valid @RequestBody StudentDTO studentDTO) {
         return studentService.addStudent(studentDTO);
     }
 
-    // GET STUDENT BY ID
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
-    public StudentDTO getStudentById(@PathVariable Long id){
-
-        Student student = studentService.getStudentById(id);
-
-        StudentDTO dto = new StudentDTO();
-        dto.setId(student.getId());
-        dto.setName(student.getName());
-        dto.setEmail(student.getEmail());
-        dto.setDepartment(student.getDepartment());
-
-        return dto;
+    public StudentDTO getStudentById(@PathVariable Long id) {
+        Student s = studentService.getStudentById(id);
+        return new StudentDTO(s.getId(), s.getName(), s.getEmail(), s.getDepartment());
     }
 
-    // UPDATE STUDENT
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public StudentDTO updateStudent(@PathVariable Long id,
-                                    @Valid @RequestBody StudentDTO studentDTO){
-
-        Student student = new Student();
-        student.setName(studentDTO.getName());
-        student.setEmail(studentDTO.getEmail());
-        student.setDepartment(studentDTO.getDepartment());
-
-        Student updated = studentService.updateStudent(id, student);
-
-        StudentDTO dto = new StudentDTO();
-        dto.setId(updated.getId());
-        dto.setName(updated.getName());
-        dto.setEmail(updated.getEmail());
-        dto.setDepartment(updated.getDepartment());
-
-        return dto;
+                                    @Valid @RequestBody StudentDTO studentDTO) {
+        return studentService.updateStudent(id, studentDTO);
     }
 
-    // DELETE STUDENT
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void deleteStudent(@PathVariable Long id){
+    public void deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
     }
 
-    // GET STUDENTS WITH PAGINATION
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/page")
     public Page<StudentDTO> getStudentsWithPagination(
             @RequestParam int page,
             @RequestParam int size) {
-
         return studentService.getStudentsWithPagination(page, size);
     }
 
-    // GET ALL STUDENTS
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public Page<StudentDTO> getAllStudents(Pageable pageable){
-
+    public Page<StudentDTO> getAllStudents(Pageable pageable) {
         return studentService.getAllStudents(pageable)
-                .map(student -> new StudentDTO(
-                        student.getId(),
-                        student.getName(),
-                        student.getEmail(),
-                        student.getDepartment()));
+                .map(s -> new StudentDTO(s.getId(), s.getName(), s.getEmail(), s.getDepartment()));
     }
 
-    // STUDENT PROFILE
     @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/me")
-    public StudentDTO getMyProfile(Authentication authentication){
-
-        String email = authentication.getName();
-
-        return studentService.getStudentByEmail(email);
+    public StudentDTO getMyProfile(Authentication authentication) {
+        return studentService.getStudentByEmail(authentication.getName());
     }
-    
+
     @GetMapping("/department/{dept}")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<StudentDTO> getStudentsByDepartment(@PathVariable String dept){
-
+    public List<StudentDTO> getStudentsByDepartment(@PathVariable String dept) {
         return studentService.getStudentsByDepartment(dept);
-
     }
-    
+
     @GetMapping("/department-count")
     @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Long> getDepartmentCounts(){
-
+    public Map<String, Long> getDepartmentCounts() {
         Map<String, Long> map = new HashMap<>();
-
         map.put("CSE", studentRepository.countByDepartment("CSE"));
-        map.put("IT", studentRepository.countByDepartment("IT"));
+        map.put("IT",  studentRepository.countByDepartment("IT"));
         map.put("ECE", studentRepository.countByDepartment("ECE"));
-
         return map;
     }
-    
-    
 }

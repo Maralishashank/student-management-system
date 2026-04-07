@@ -14,4 +14,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     //      and create multiple identical enrollment records. EnrollmentController now
     //      calls this before saving.
     boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
+
+    // Used when deleting a student — removes all their enrollments first
+    void deleteByStudentId(Long studentId);
 }

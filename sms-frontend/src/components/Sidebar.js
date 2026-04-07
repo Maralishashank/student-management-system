@@ -2,13 +2,17 @@ import { Link, useLocation } from "react-router-dom";
 import "../styles/sms.css";
 
 const links = [
-  { to: "/admin",           icon: "📊", label: "Dashboard" },
-  { to: "/students",        icon: "👥", label: "Students" },
-  { to: "/courses",         icon: "📚", label: "Courses" },
-  { to: "/marks",           icon: "🎯", label: "Marks" },
-  { to: "/mark-attendance", icon: "✅", label: "Mark Attendance" },
-  { to: "/attendance",      icon: "📋", label: "Attendance Report" },
-  { to: "/announcements",   icon: "📢", label: "Announcements" },
+  { to: "/admin",            icon: "📊", label: "Dashboard" },
+  { to: "/students",         icon: "👥", label: "Students" },
+  { to: "/courses",          icon: "📚", label: "Courses" },
+  { to: "/marks",            icon: "🎯", label: "Marks" },
+  { to: "/mark-attendance",  icon: "✅", label: "Mark Attendance" },
+  { to: "/attendance",       icon: "📋", label: "Attendance Report" },
+  { to: "/announcements",    icon: "📢", label: "Announcements" },
+];
+
+const settingsLinks = [
+  { to: "/admin-management", icon: "🔑", label: "Admin Management" },
 ];
 
 function Sidebar() {
@@ -32,11 +36,15 @@ function Sidebar() {
       <nav className="sms-sidebar-nav">
         <div className="sms-sidebar-section">Main Menu</div>
         {links.map(({ to, icon, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className={`sms-sidebar-link ${pathname === to ? "active" : ""}`}
-          >
+          <Link key={to} to={to} className={`sms-sidebar-link ${pathname === to ? "active" : ""}`}>
+            <span className="sms-sidebar-icon">{icon}</span>
+            {label}
+          </Link>
+        ))}
+
+        <div className="sms-sidebar-section" style={{ marginTop: 12 }}>Settings</div>
+        {settingsLinks.map(({ to, icon, label }) => (
+          <Link key={to} to={to} className={`sms-sidebar-link ${pathname === to ? "active" : ""}`}>
             <span className="sms-sidebar-icon">{icon}</span>
             {label}
           </Link>

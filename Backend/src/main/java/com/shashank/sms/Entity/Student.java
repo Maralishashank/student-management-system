@@ -14,13 +14,18 @@ public class Student {
     @NotBlank
     private String name;
 
+    // Unique at DB level so no two students can share the same email/login.
+    // Previously there was no constraint, so a second student with the same email
+    // would silently create a duplicate Student row and then fail on the User save
+    // with a confusing DataIntegrityViolationException.
     @Email
     @NotBlank
+    @Column(unique = true)
     private String email;
+
     private String department;
 
-    public Student() {
-    }
+    public Student() {}
 
     public Student(Long id, String name, String email, String department) {
         this.id = id;
@@ -29,35 +34,12 @@ public class Student {
         this.department = department;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
+    public Long getId()                        { return id; }
+    public void setId(Long id)                 { this.id = id; }
+    public String getName()                    { return name; }
+    public void setName(String name)           { this.name = name; }
+    public String getEmail()                   { return email; }
+    public void setEmail(String email)         { this.email = email; }
+    public String getDepartment()              { return department; }
+    public void setDepartment(String dept)     { this.department = dept; }
 }
