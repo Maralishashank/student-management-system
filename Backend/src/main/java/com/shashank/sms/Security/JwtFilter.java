@@ -32,18 +32,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // FIX: The original code skipped ALL /auth/** paths without reading the token.
-        // This meant /auth/change-password never had its Authentication object populated,
-        // so Spring Security always saw an anonymous request and returned 401.
-        // The fix: only skip token processing for the genuinely public endpoints.
-        // /auth/change-password still goes through the token extraction below so
-        // the Authentication object is set and the endpoint can read the username.
-        boolean isPublicAuthPath =
+        // Only skip token processing for genuinely public endpoints.
+        // /auth/register is NO LONGER in this list — it now requires an ADMIN token.
+        // /auth/change-password is also not here — it needs the first-login JWT.
+        boolean isPublicPath =
                 path.equals("/auth/login") ||
-                path.equals("/auth/register") ||
                 path.equals("/auth/test");
 
-        if (isPublicAuthPath) {
+        if (isPublicPath) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,12 +47,9 @@ public class JwtFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-
             String token = authHeader.substring(7);
-
             try {
                 String username = jwtUtil.extractUsername(token);
-
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 username,
@@ -65,9 +58,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                         new SimpleGrantedAuthority("ROLE_" + jwtUtil.extractRole(token))
                                 )
                         );
-
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-
             } catch (Exception e) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;

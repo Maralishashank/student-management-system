@@ -1,5 +1,6 @@
 package com.shashank.sms.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +21,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    // FIX: Added RuntimeException handler BEFORE the catch-all Exception handler.
-    // Previously, all RuntimeExceptions (e.g. "FIRST_LOGIN_CHANGE_PASSWORD",
-    // "Marks for this subject already exist") were swallowed by the generic 500 handler,
-    // so the frontend only ever saw "Server Error" and could never act on them.
-    // Now they return 400 Bad Request with the actual message in the body.
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         Map<String, Object> error = new HashMap<>();
@@ -32,6 +28,21 @@ public class GlobalExceptionHandler {
         error.put("status", 400);
         error.put("error", ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // FIX: Added DataIntegrityViolationException handler.
+    // When /auth/register is called with a username that already exists,
+    // JPA throws DataIntegrityViolationException (not a RuntimeException).
+    // Previously this fell through to the generic 500 handler and the frontend
+    // showed "An unexpected error occurred" with no actionable information.
+    // Now it returns 409 Conflict with a clear "Username already exists" message.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicate(DataIntegrityViolationException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", 409);
+        error.put("error", "Username already exists. Please choose a different username.");
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)

@@ -43,23 +43,27 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
 
-                // Public endpoints — login and register only.
-                // All /auth/** routes are also passed through by JwtFilter directly,
-                // so no token is needed for any /auth/ call at the filter level.
-                // We still list change-password as authenticated here so Spring Security
-                // enforces it has a valid Authentication object (populated by JwtFilter
-                // from the first-login token).
+                // Public — login only. Register is now ADMIN-only so only
+                // existing admins can create new admin accounts. The default
+                // admin is seeded automatically by DataSeeder on first startup.
                 .requestMatchers("/auth/login").permitAll()
-                .requestMatchers("/auth/register").permitAll()
                 .requestMatchers("/auth/test").permitAll()
+
+                // SECURITY FIX: /auth/register is now restricted to ADMIN.
+                // Previously it was public, meaning any anonymous user could
+                // create an admin account. Now only a logged-in admin can
+                // create additional admin accounts.
+                .requestMatchers("/auth/register").hasRole("ADMIN")
+
+                // /auth/change-password requires a valid token (the first-login
+                // short-lived JWT satisfies this).
                 .requestMatchers("/auth/change-password").authenticated()
 
-                // FIX: /attendance/my must come BEFORE the broad /attendance/** ADMIN rule.
-                // Spring Security matches rules in order — the first match wins.
+                // /attendance/my must come BEFORE the broad /attendance/** ADMIN rule.
                 .requestMatchers("/attendance/my").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers("/attendance/**").hasRole("ADMIN")
 
-                // FIX: /students/me must come BEFORE the broad /students/** ADMIN rule.
+                // /students/me must come BEFORE the broad /students/** ADMIN rule.
                 .requestMatchers("/students/me").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers("/students/**").hasRole("ADMIN")
 
