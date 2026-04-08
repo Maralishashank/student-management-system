@@ -46,10 +46,6 @@
 |---------------|----------|
 | <img src="screenshots/my-attendance.png" width="100%"> | <img src="screenshots/my-marks.png" width="100%"> |
 
----
-
-🔗 **Live Demo:** [https://student-management-system-self-one.vercel.app](https://student-management-system-self-one.vercel.app)
-📁 **Repository:** [github.com/Maralishashank/student-management-system](https://github.com/Maralishashank/student-management-system)
 
 ---
 
