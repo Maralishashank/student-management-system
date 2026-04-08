@@ -25,7 +25,7 @@ function AdminManagement() {
   const [password,  setPassword]  = useState("");
   const [showPass,  setShowPass]  = useState(false);
   const [loading,   setLoading]   = useState(false);
-  const [fetching,  setFetching]  = useState(true);
+
   const [error,     setError]     = useState("");
   const [success,   setSuccess]   = useState("");
 
@@ -36,9 +36,9 @@ function AdminManagement() {
       // so we use the auth test endpoint to confirm the backend is alive,
       // and maintain a local list of created admins in this session.
       // For a proper list, a GET /auth/admins endpoint would be needed.
-      setFetching(false);
+      
     } catch {
-      setFetching(false);
+      
     }
   };
 
